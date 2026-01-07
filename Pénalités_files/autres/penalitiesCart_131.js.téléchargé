@@ -1,0 +1,1532 @@
+
+var  wordList = [];
+var displayedChart = undefined;
+var displayedDoubleChart = undefined;
+var displayedRentabilityChart = undefined;
+
+var virementPena = [];
+var empannagePena = [];
+var voilePena = [];
+var virementVoilePena = [];
+var empannageVoilePena = [];
+
+var virementPenaEnergy = [];
+var empannagePenaEnergy = [];
+var voilePenaEnergy = [];
+var virementVoilePenaEnergy = [];
+var empannageVoilePenaEnergy = [];
+
+
+
+
+var currentTWS = 10.0;
+var currentBoatSpeed = 5.0;
+
+var currentEnergy = 66.7;
+var currentEnergy2 = 66.7;
+var currentEnergy3 = 66.7;
+var virementEnergyLoose = [];
+var empannageEnergyLoose = [];
+var voileEnergyLoose = [];
+
+var boatEnergyLoose = 1;
+
+var currentDTWS = 10.0;
+var currentDBoatSpeed = 5.0;
+
+
+var currentRTWS = 10.0;
+var currentBoatSpeedWithoutSC = 10.0;
+var currentBoatSpeedWithSC = 12.0;
+var activeBoat ;
+var urlInit = null;
+
+$(window).on('load', function () {
+	let defaultSel = "Sélectionner un bateau";
+	let pos = 0;
+	if($("#countryEn").text()!="") 
+		defaultSel ="Select a boat"
+
+	$("#boatSelect").append($('<option>', {value: pos,text: defaultSel}));
+	$.each(boatPenalities, function (i, boat) {
+		pos += 1;
+		$("#boatSelect").append($('<option>', {value: pos,text: boat.name}));
+	});
+
+  $("#boatSelect").change( initializePenaChart);
+
+    var t = $("#countryEn").text();
+    if($("#countryEn").text()!="") {
+      wordList = ["Tack","Gybe","Sail","Simple Penalities ","Double Penalities ",
+      "Rentability ","Without sail change", "With sail change Std", "With sail change Pro", 
+      "Penality :","Boat Speed (knts) Without sail change","Boat Speed (knts) With sail change", "Time :","Skipper Energy"];
+    } else
+      wordList = ["Virement","Empannage","Voile","Pénalités simple ","Pénalités double ",
+    //            0           1           2       3                   4      
+      "Rentabilité ","Sans Changement de voile", "Avec Changement de voile Std", "Avec Changement de voile Pro",
+    //           5               6                                   7                       8                   
+      "Pénalité :","Boat Speed (nds) Sans Changement de voile","Boat Speed (nds) Avec Changement de voile" , "Temps :", "Energie du skipper"];
+    // 9            10                                           11                                           12
+    let actualTheme =  window.localStorage.getItem('theme');
+    if(actualTheme && actualTheme=="dark") {
+      if(actualTheme=="dark") {
+        Chart.defaults.borderColor ='rgba(255, 255, 255,0.3)';
+        Chart.defaults.color  = 'rgba(255, 255, 255,0.5)';
+      } else
+      {
+        Chart.defaults.borderColor ='rgba(0, 0, 0,0.2)';
+        Chart.defaults.color  = 'rgba(0, 0, 0,0.6 )';
+      }
+    }
+    
+
+
+
+    $("#rentabilityPena").text(wordList[9]);
+
+    $("#bswsc_name").text(wordList[10]);
+    $("#bssc_name").text(wordList[11]);
+    $("#tableRentability_Std").text(wordList[5]);
+    $("#tableRentability_Std_TpsName").text(wordList[12]);
+
+    $("#skipperEnergy").text(wordList[13]+" (%)"); 
+    $("#skipperEnergy3").text(wordList[13]+" (%)"); 
+      
+    $(".tws_val").val(currentTWS);
+    $("#tws_val_slider").val(currentTWS);
+    $(".bs_val").val(currentBoatSpeed);
+    $("#bs_val_slider").val(currentBoatSpeed);
+    $(".tws_val2").val(currentDTWS);
+    $("#bs_val2").val(currentDBoatSpeed);
+    $("#tws_val2_slider").val(currentDTWS);
+    $("#bs_val2_slider").val(currentDBoatSpeed);
+
+    $(".sEnergy_val").val(currentEnergy);
+    $("#sEnergy_val_slider").val(currentEnergy);
+    $(".sEnergy_val2").val(currentEnergy2);
+    $("#sEnergy_val2_slider").val(currentEnergy2);
+    $(".sEnergy_val3").val(currentEnergy3);
+    $("#sEnergy_val3_slider").val(currentEnergy3);
+    
+
+    $(".tws_val3").val(currentRTWS);
+    $(".bswsl_val").val(currentBoatSpeedWithoutSC);
+    $(".bssl_val").val(currentBoatSpeedWithSC);
+  
+    $("#tws_val3_slider").val(currentRTWS);
+    $("#bswsl_val_slider").val(currentBoatSpeedWithoutSC);
+    $("#bssl_val_slider").val(currentBoatSpeedWithSC);
+
+    $(".extraInfos").hide();  
+    dynamicMargin();
+    let actualBoat= window.localStorage.getItem('boat');
+    if(actualBoat) $("#boatSelect").val(actualBoat);
+    urlInit = $_GET('b');
+    initializePenaChart(-1);
+    
+});
+$(window).on('resize', function(){
+	dynamicMargin();
+});
+
+function $_GET(param) {
+	var vars = {};
+	window.location.href.replace( location.hash, '' ).replace( 
+		/[?&]+([^=&]+)=?([^&]*)?/gi, // regexp
+		function( m, key, value ) { // callback
+			vars[key] = value !== undefined ? value : '';
+		}
+	);
+
+	if ( param ) {
+		return vars[param] ? vars[param] : null;	
+	}
+	return vars;
+}
+
+
+window.resetZoom1 = function() {
+  if(displayedChart)
+    displayedChart.resetZoom();
+};
+
+
+window.resetZoom2 = function() {
+  if(displayedDoubleChart)
+    displayedDoubleChart.resetZoom();
+};
+
+
+window.resetZoom3 = function() {
+  if(displayedRentabilityChart)
+    displayedRentabilityChart.resetZoom();
+};
+
+
+class CustomLineChart extends Chart.LineController {
+	draw() {
+	  super.draw();
+	 
+
+    const tooltip = this.chart.tooltip;
+    const active =
+      (tooltip && typeof tooltip.getActiveElements === 'function'
+        ? tooltip.getActiveElements()
+        : this.chart.getActiveElements?.()) || [];
+
+    if (active.length) {	
+		let	rightX = this.chart.scales.x.left,
+		leftX = this.chart.scales.x.right ,      
+		topY = this.chart.scales.y.top,
+		bottomY = this.chart.scales.y.bottom,
+		x = active[0].element.x,
+		ctx = this.chart.ctx;
+		ctx.save();
+		// Render line on canvas
+		//draw vertical axis
+		ctx.beginPath();
+		ctx.moveTo(x, bottomY);
+		ctx.lineTo(x, topY);
+		ctx.lineWidth = 1;
+		ctx.strokeStyle = '#b4b4b4';
+		ctx.stroke();
+		
+		//draw a horizontal for every graph
+      	for (let i = 0; i < active.length; i++) {
+        	const el = active[i].element;
+        	const y = el.y;
+			ctx.beginPath();
+			ctx.moveTo(leftX, y);
+			ctx.lineTo(rightX, y);
+			ctx.lineWidth = 1;
+			const color =
+          		el.options?.borderColor ||
+          		el.options?.backgroundColor ||
+          		'#b4b4b4';
+
+        	ctx.strokeStyle = color;
+			
+			ctx.stroke();
+		} 
+		ctx.restore();
+	  }
+	}
+  }
+
+
+CustomLineChart.id = 'CustomLineChart';
+CustomLineChart.defaults = Chart.LineController.defaults;
+
+
+
+	//= On DOM Ready ==================//
+  $(function() {//Adding a .fix() Method to the Number class
+    Number.prototype.fix = function(n, pad) {
+      if (pad === undefined) pad = false;
+  
+      if (pad === true)
+        return this.toFixed(n ? n : 2);
+      else
+        return Number.parseFloat(this.toFixed(n ? n : 2));
+    };
+    
+    Chart.register(CustomLineChart);
+  });
+
+
+let windValue = [];
+
+for (var i = 0; i < 350; i++) {
+  windValue.push(i/10);
+}
+
+let timeValue = [];
+
+
+
+
+function computeBoatData(polarData)
+{
+  virementPena = [];
+  empannagePena = [];
+  voilePena = [];
+  virementVoilePena = [];
+  empannageVoilePena = [];
+  virementVoilePena.d = [];
+  virementVoilePena.s = [];
+  virementVoilePena.t = [];
+  empannageVoilePena.d = [];
+  empannageVoilePena.s = [];
+  empannageVoilePena.t = [];
+
+  var tackMin = polarData.winch.tack.std.lw.timer;
+  var tackMax = polarData.winch.tack.std.hw.timer;
+  var gybeMin = polarData.winch.gybe.std.lw.timer;
+  var gybeMax = polarData.winch.gybe.std.hw.timer;
+  var sailChangeMin = polarData.winch.sailChange.std.lw.timer;
+  var sailChangeMax = polarData.winch.sailChange.std.hw.timer;
+  var lws = polarData.winch.lws*10;
+  var hws = polarData.winch.hws*10;
+  
+
+  var virementGap = tackMax-tackMin;
+  var  empannageGap = gybeMax-gybeMin;
+  var  voileGap = sailChangeMax-sailChangeMin;
+
+  
+  if($('#furler').is(":checked")) 
+  {
+    sailChangeMin *= 0.8;
+    sailChangeMax *= 0.8;
+    voileGap *= 0.8;
+    
+  }
+    
+  for(var i = 0; i < 350; i++)
+  {
+    var doublePena = 0;
+    var simplePena = 0;
+    if(i<lws)
+    {
+      virementPena.push(tackMin);
+      empannagePena.push(gybeMin);
+      voilePena.push(sailChangeMin);
+
+      if(tackMin >= sailChangeMin)
+      {
+        doublePena = sailChangeMin;
+        simplePena = tackMin-sailChangeMin;
+        virementVoilePena.t.push(tackMin);
+      } else{
+        doublePena = tackMin;
+        simplePena = sailChangeMin-tackMin;
+        virementVoilePena.t.push(sailChangeMin); 
+      }
+      virementVoilePena.d.push(doublePena);
+      virementVoilePena.s.push(simplePena);
+
+      if(gybeMin >= sailChangeMin)
+      {
+        doublePena = sailChangeMin;
+        simplePena = gybeMin-sailChangeMin; 
+        empannageVoilePena.t.push(gybeMin);   
+      } else{
+        doublePena = gybeMin;
+        simplePena = sailChangeMin-gybeMin;
+        empannageVoilePena.t.push(sailChangeMin);     
+      }
+      empannageVoilePena.d.push(doublePena);
+      empannageVoilePena.s.push(simplePena);
+    } else if(i>hws)
+    {    
+      virementPena.push(tackMax);
+      empannagePena.push(gybeMax);
+      voilePena.push(sailChangeMax);
+
+      if(tackMax >= sailChangeMax)
+      {
+        doublePena = sailChangeMax;
+        simplePena = tackMax-sailChangeMax;
+        virementVoilePena.t.push(tackMax);      
+      } else{
+        doublePena = tackMax;
+        simplePena = sailChangeMax-tackMax;
+        virementVoilePena.t.push(sailChangeMax);
+      }
+      virementVoilePena.d.push(doublePena);
+      virementVoilePena.s.push(simplePena);
+      if(gybeMax >= sailChangeMax)
+      {
+        doublePena = sailChangeMax;
+        simplePena = gybeMax-sailChangeMax;
+        empannageVoilePena.t.push(gybeMax);  
+      } else{
+        doublePena = gybeMax;
+        simplePena = sailChangeMax-gybeMax;
+        empannageVoilePena.t.push(sailChangeMax);  
+      }
+      empannageVoilePena.d.push(doublePena);
+      empannageVoilePena.s.push(simplePena);            
+
+    } else 
+    {
+
+      let fraction = 0.5-Math.cos((i-lws)/(hws-lws)*Math.PI)*0.5;
+      var pena= fraction * virementGap+tackMin;
+      virementPena.push(pena);
+
+      var pena1= fraction * empannageGap+gybeMin;
+      empannagePena.push(pena1);
+
+      var pena2= fraction * voileGap+sailChangeMin;
+      voilePena.push(pena2);
+
+      if(pena >= pena2)
+      {
+        doublePena = pena2;
+        simplePena = pena-pena2;
+        virementVoilePena.t.push(pena);  
+      } else{
+        doublePena = pena;
+        simplePena = pena2-pena;
+        virementVoilePena.t.push(pena2);   
+      }
+      virementVoilePena.d.push(doublePena);
+      virementVoilePena.s.push(simplePena);
+      if(pena1 >= pena2)
+      {
+        doublePena = pena2;
+        simplePena = pena1-pena2;
+        empannageVoilePena.t.push(pena1);   
+      } else{
+        doublePena = pena1;
+        simplePena = pena2-pena1;
+        empannageVoilePena.t.push(pena2);
+      }
+      empannageVoilePena.d.push(doublePena);
+      empannageVoilePena.s.push(simplePena);     
+    } 
+  }
+}
+
+
+//boats: {0: 1, 5: 1.2, 15: 1.5, 50: 2}
+//activeBoat.polarName
+
+function computeBoatEnergyLoose() {
+
+/*  0 - 5 nds 0.04*v + 1
+  5 - 15 nds 0.03*v + 1.05
+  15 - 50 nds 0.014286*v + 1.285714 
+*/
+  boatEnergyLoose = Number(stamina.consumption.boats[activeBoat.stamina]);
+}
+
+
+function computeEnergyLoose() {
+ // activeBoat.stamina.point.tack
+
+  virementEnergyLoose = [];
+  empannageEnergyLoose = [];
+  voileEnergyLoose = [];
+/* 0 - 10 nds 0.02*v + 1
+   10 - 20 nds 0.03*v + 0.9
+   20 - 30 nds 0.05*v + 0.5 
+   Virement de bord : 10%
+Empannage : 10%
+Changement de voile : 20%
+   */
+  var baseVirement = stamina.consumption.points.tack;
+  var baseEmpannage = stamina.consumption.points.gybe;
+  var baseVoile = stamina.consumption.points.sail;
+ // points: {tack: 10, gybe: 10, sail: 20}
+  for(var i = 0; i < 350; i++)
+  {
+    function getWindConsumptionFactor(windSpeed) {
+      const vrJacketwinds = {// hard coded by VR
+        "0": 1,
+        "10": 1,
+        "20": 1.2,
+        "30": 1.8
+      };
+      let winds = stamina.consumption.winds;
+      if($('#jacket').is(":checked")) winds = vrJacketwinds;
+      const windKeys = Object.keys(winds).map(Number).sort((a, b) => a - b);
+      if (windSpeed <= windKeys[0]) return winds[windKeys[0]];
+      if (windSpeed >= windKeys[windKeys.length - 1]) return winds[windKeys[windKeys.length - 1]];
+      let lowerBound = windKeys[0];
+      let upperBound = windKeys[0];
+      for (let i = 0; i < windKeys.length; i++) {
+          if (windSpeed >= windKeys[i]) {
+              lowerBound = windKeys[i];
+          }
+          if (windSpeed < windKeys[i]) {
+              upperBound = windKeys[i];
+              break;
+          }
+      }
+      const ratio = (windSpeed - lowerBound) / (upperBound - lowerBound);      
+      return winds[lowerBound] + ratio * (winds[upperBound] - winds[lowerBound]);
+    } 
+
+    let globalcoeff = getWindConsumptionFactor(i/10);
+    
+    let furlerFactor = 1;
+    if($('#furler').is(":checked")) furlerFactor = 0.8;
+
+    globalcoeff *=  boatEnergyLoose;
+    virementEnergyLoose.push(baseVirement*globalcoeff);
+    empannageEnergyLoose.push(baseEmpannage*globalcoeff);
+    voileEnergyLoose.push(baseVoile*globalcoeff*furlerFactor);
+  }
+}
+
+function scrollBodyup() {
+  $("html, body").animate({
+    scrollTop: 0
+  }); 
+}
+function cleanPage()
+{
+    
+  if(displayedChart) displayedChart.destroy();
+  displayedChart = undefined;
+  if(displayedDoubleChart) displayedDoubleChart.destroy();
+  displayedDoubleChart = undefined;		
+  if(displayedRentabilityChart) displayedRentabilityChart.destroy();
+  displayedRentabilityChart = undefined;
+  $('.extraInfos2').hide();
+  
+  $(".extraInfos").hide();
+  $("#chartTitle").text('');
+  $("#chartTitle2").text('');
+  $("#chartTitle3").text('');
+  scrollBodyup();
+
+}
+function onBoatSelect(boatId)
+{
+  if(urlInit)
+  {
+    if(urlBoat=="Figaro")urlBoat="Figaro_III";
+    for(i=0;i<urlNameToId.length;i++)
+    {
+      if(urlNameToId[i]==urlInit) {
+        boatId = i+1;
+        break;
+      }
+    }
+    if(boatId == -1)
+    {
+      cleanPage();
+      return false;	      
+    }
+     $("#boatSelect").val(boatId);
+  }
+  else
+  {
+    if($("#boatSelect").val()==0) {
+      cleanPage();
+      return false;	
+    }
+    boatId = $("#boatSelect").val();
+  }
+  if(boatId==null || boatId==undefined || boatId==-1){
+		cleanPage();
+		return false;	
+	}
+  activeBoat = boatPenalities[boatId-1];
+  
+	window.localStorage.setItem('boat', $("#boatSelect").val());
+  const options = {
+		weekday: 'long',
+		year: 'numeric',
+		month: 'long',
+		day: 'numeric',
+	  };
+
+	let polarDate = new Date(boatPenalities[boatId-1].polarName._updatedAt);
+	if($("#countryEn").text()!="") {
+		$("#polarupDate").html("Last update : " + polarDate.toLocaleDateString('en-EN', options) + " " + polarDate.toLocaleTimeString('en-EN'));
+	} else {
+		$("#polarupDate").html("MAJ : " + polarDate.toLocaleDateString('fr-FR', options) + " " + polarDate.toLocaleTimeString('fr-FR'))
+	
+	}
+  computeBoatData(activeBoat.polarName);
+  computeBoatEnergyLoose();
+  computeEnergyLoose();
+  return true;
+}
+
+function initializePenaChart(boatId)
+{
+
+	if(!onBoatSelect(boatId) ) return;
+  requestDrawSimplePenalitiesChart();
+  drawDoublePenalities();
+  requestDrawRentabilityChart();
+      
+  $(".extraInfos").show();
+
+  dynamicMargin();
+  
+
+  scrollBodyup();   
+}
+/*compute diffrent curve*/
+function dynamicMargin() {
+
+  var e = $('#header');
+  var h = e.height() + parseInt( e.css("paddingBottom")) + parseInt( e.css("paddingTop"));
+  e = $('#breadcrumbs');
+  h += e.height() + parseInt( e.css("paddingBottom")) + parseInt( e.css("paddingTop"));
+  e = $('#servicesHeader');
+  h += parseInt( e.css("paddingTop"));
+	e.css("margin-top", h+10);
+	if($(window).height()>600)
+	{
+		h += e.height() + parseInt( e.css("paddingBottom"));
+		e = $('#chartTitle');
+		h += e.height() + parseInt( e.css("paddingBottom")) + parseInt( e.css("paddingTop"));
+		e = $('#services');
+		e.css("margin-top", h);
+	} else
+	{
+		$('#services').css("margin-top", 0);
+	}
+}
+
+let workerRenta2 = null;
+
+function requestDrawSimplePenalitiesChart() {
+
+
+  /* apply energy*/
+  /* energyFactor = -0.015*t+2*/
+
+  virementPenaEnergy = [];
+  empannagePenaEnergy = [];
+  voilePenaEnergy = [];
+
+  var energyFactor = currentEnergy * -0.015 + 2;
+  if(energyFactor<0.5)energyFactor=0.5;
+
+
+  for(i=0;i<windValue.length;i++) {
+    virementPenaEnergy[i] = Number.parseFloat(virementPena[i] * energyFactor).toFixed(0) ;
+    empannagePenaEnergy[i] = Number.parseFloat(empannagePena[i] * energyFactor).toFixed(0);
+    voilePenaEnergy[i] = Number.parseFloat(voilePena[i] * energyFactor).toFixed(0);
+  }
+
+  doDrawSimplePenalities();
+}
+            
+function doDrawSimplePenalities () {
+  var timeAxis = "Temps";
+  if($("#countryEn").text()!="") 
+    timeAxis = "Time";
+    
+  const dataChart = {
+    labels: windValue,
+    datasets: [
+      {
+        label: wordList[0],
+        data: virementPenaEnergy,
+        yAxisID: 'y',
+        borderColor: 'green',
+        backgroundColor: 'green',
+      },
+      {
+        label: wordList[1],
+        data: empannagePenaEnergy,
+        borderColor: 'blue',
+        backgroundColor: 'blue',
+        yAxisID: 'y',
+      },
+      {
+        label: wordList[2],
+        data: voilePenaEnergy,
+        borderColor: 'red',
+        backgroundColor: 'red',
+        yAxisID: 'y',
+      },
+
+    ]
+  };
+      
+  
+
+    var titleChart = wordList[3] + activeBoat.name + " - "+ wordList[13] + " " +currentEnergy +"%";
+    $("#chartTitle").text(titleChart);
+    const zoomOptions = {
+      limits: {
+        x: {min: 0, max:350, minRange: 20}
+      },
+      pan: {
+        enabled: true,
+        mode: 'x',
+      },
+      zoom: {
+        wheel: {
+          enabled: true,
+        },
+        pinch: {
+          enabled: true
+        },
+        mode: 'x',
+        speed: 0.05
+      }
+    };
+    const configChart = {
+      type: 'CustomLineChart',
+      data: dataChart,
+      options: {
+        responsive: true,
+        interaction: {
+          mode: 'index',
+          intersect: false,
+        }, 
+        plugins: {
+          zoom: zoomOptions,
+          legend: {
+            display: true
+          },
+          tooltip: {
+            callbacks: {					
+              title: function(tooltipItems, data) {
+                let title = tooltipItems[0].label || '';
+                if($("#countryEn").text()!="") 
+                  return "TWS : " + title + " knts";
+                else
+                  return "TWS : " + title + " nds";
+              },
+              label: function(context) {
+                let label = context.dataset.label || '';
+  
+                if (label) {
+                  label += ': ';
+                }
+                if (context.parsed.y !== null) {
+  
+                  label += buildTimeTxt2(context.parsed.y);
+                }
+                return label;
+              },
+            }
+          }		   
+        },
+
+        stacked: false,
+        elements: {
+          point:{
+              radius: 0
+          }
+      },
+        scales: {
+          x: {
+
+            ticks: {
+              stepSize: 1,
+              callback: function(value, index, values) {
+                if(labelsChartWinds.find(element => element==windValue[value]))
+                  if($("#countryEn").text()!="") 
+                    return windValue[value] + " knts";
+                  else
+                    return windValue[value] + " nds";
+                  else if(value===0){
+                  return value;
+                }
+              }
+            },
+          },
+          y: {
+            type: 'linear',
+            display: true,
+            position: 'left',
+            ticks: {                
+              stepSize: 1,
+              callback: function(value, index, values) {
+                if(labelsChartTime.find(element => element==value))
+                  return buildTimeTxt2(value);
+                
+              }
+              
+            },
+            title : {
+              display:true,
+              text:timeAxis
+            }
+          },
+        }
+      },
+    };
+
+    if(displayedChart) displayedChart.destroy();
+    var ctx = document.getElementById('penalitiesChart');
+    displayedChart = new Chart(ctx, configChart);
+
+    $(".tws_val").val(currentTWS);
+    $(".bs_val").val(currentBoatSpeed);
+    $("#tws_val_slider").val(currentTWS);
+    $("#bs_val_slider").val(currentBoatSpeed);
+
+    $(".sEnergy_val").val(currentEnergy);
+    $("#sEnergy_val_slider").val(currentEnergy);
+    getPenaTime(currentTWS);
+    getPenaDistance(currentTWS,currentBoatSpeed);
+
+  }
+
+  function drawDoublePenalities () {
+    
+
+    virementVoilePenaEnergy = [];
+    empannageVoilePenaEnergy = [];
+  
+    var energyFactor = currentEnergy2 * -0.015 + 2;
+  if(energyFactor<0.5)energyFactor=0.5;
+  
+    for(i=0;i<windValue.length;i++) {
+      virementVoilePenaEnergy[i] = Number.parseFloat(virementVoilePena.t[i] * energyFactor).toFixed(0) ;
+      empannageVoilePenaEnergy[i] = Number.parseFloat(empannageVoilePena.t[i] * energyFactor).toFixed(0);
+    }
+
+
+    var timeAxis = "Temps";
+    if($("#countryEn").text()!="") 
+      timeAxis = "Time";
+  const dataChart2 = {
+    labels: windValue,
+    datasets: [
+      {
+        label: wordList[0] +' + '+wordList[2],
+        data: virementVoilePenaEnergy,
+        yAxisID: 'y',
+        borderColor: 'green',
+        backgroundColor: 'green',
+      },
+      {
+        label: wordList[1] +' + '+wordList[2],
+        data: empannageVoilePenaEnergy,
+        borderColor: 'blue',
+        backgroundColor: 'blue',
+        yAxisID: 'y',
+      }
+    ]
+  };
+  var titleChart2 = wordList[4] + activeBoat.name + " - "+ wordList[13] + " " +currentEnergy2 +"%";
+    
+   
+   $("#chartTitle2").text(titleChart2);
+   const zoomOptions = {
+    limits: {
+      x: {min: 0, max:350, minRange: 20}
+    },
+    pan: {
+      enabled: true,
+      mode: 'x',
+    },
+    zoom: {
+      wheel: {
+        enabled: true,
+      },
+      pinch: {
+        enabled: true
+      },
+      mode: 'x',
+      speed: 0.05
+    }
+  };
+  const configChart2 = {
+      type: 'CustomLineChart',
+      data: dataChart2,
+      options: {
+        plugins: {
+          zoom: zoomOptions,
+          legend: {
+            display: true
+          },
+          tooltip: {
+            xAlign : 'left',
+            yAlign :'top',
+            callbacks: {              
+              title: function(tooltipItems, data) {
+                let title = tooltipItems[0].label || '';
+                if($("#countryEn").text()!="") 
+                  return "TWS : " + title + " knts";
+                else
+                  return "TWS : " + title + " nds";
+              },
+              label: function(context) {
+                let label = context.dataset.label || '';
+
+                if (label) {
+                  label += ': ';
+                }
+                if (context.parsed.y !== null) {
+
+                  label += buildTimeTxt2(context.parsed.y);
+                }
+                return label;
+              },
+            }
+          }		   
+        },
+        responsive: true,
+        interaction: {
+          mode: 'index',
+          intersect: false,
+        },
+        stacked: false,
+        elements: {
+          point:{
+              radius: 0
+          }
+      },
+
+        scales: {
+          x: {
+            ticks: {
+                stepSize: 1,
+              callback: function(value, index, values) {
+                if(labelsChartWinds.find(element => element==windValue[value]))
+                    if($("#countryEn").text()!="") 
+                    return windValue[value] + " knts";
+                  else
+                    return windValue[value] + " nds";
+                else if(value===0){
+                  return value;
+                  }
+
+              }
+            },
+          },
+          y: {
+            type: 'linear',
+            display: true,
+            position: 'left',
+            ticks: {
+              stepSize: 1,
+              callback: function(value, index, values) {
+                if(labelsChartTime.find(element => element==value))
+                  return buildTimeTxt2(value);
+                
+              }
+            },
+            title : {
+              display:true,
+              text:timeAxis
+            }
+          },
+        }
+      },
+    };
+
+  if(displayedDoubleChart) displayedDoubleChart.destroy();
+  var ctx = document.getElementById('doublePenalitiesChart');
+  displayedDoubleChart = new Chart(ctx, configChart2);
+
+  $(".tws_val2").val(currentDTWS);
+  $(".bs_val2").val(currentDBoatSpeed);
+  $("#tws_val2_slider").val(currentDTWS);
+  $("#bs_val2_slider").val(currentDBoatSpeed);
+  $(".sEnergy_val2").val(currentEnergy2);
+  $("#sEnergy_val2_slider").val(currentEnergy2);
+  getDoublePenaTime(currentDTWS);
+  getDoublePenaDistance(currentDTWS,currentDBoatSpeed);
+
+}
+
+
+$(".inVal1").on("keydown", function (e) {
+  // allow function keys and decimal separators
+  if (
+    // backspace, delete, tab, escape, enter, comma and .
+    $.inArray(e.keyCode, [46, 8, 9, 27, 13, 110, 188, 190]) !== -1 ||
+    // Ctrl/cmd+A, Ctrl/cmd+C, Ctrl/cmd+X
+    ($.inArray(e.keyCode, [65, 67, 88]) !== -1 && (e.ctrlKey === true || e.metaKey === true)) ||
+    // home, end, left, right
+    (e.keyCode >= 35 && e.keyCode <= 40) ||
+    (e.keyCode >= 224 && e.keyCode <= 227)) {
+
+    /*
+    // optional: replace commas with dots in real-time (for en-US locals)
+    if (e.keyCode === 188) {
+        e.preventDefault();
+        $(this).val($(this).val() + ".");
+    }
+*/
+    // optional: replace decimal points (num pad) and dots with commas in real-time (for EU locals)
+    if (e.keyCode === 110 || e.keyCode === 190 || e.keyCode === 188) {
+        e.preventDefault();
+        $(this).val($(this).val() + ",");
+    }
+
+
+    
+    if (e.keyCode === 38 || e.keyCode === 224 || e.keyCode === 39 || e.keyCode === 227) {
+      e.preventDefault();
+      if(this.id =="tws_val") set_tws_val(getRoundedVal("#tws_val",0.1,1,45));
+      else if (this.id =="bs_val") set_bs_val(getRoundedVal("#bs_val",0.1,1,45));
+      else if (this.id =="tws_val2") set_tws_val2(getRoundedVal("#tws_val2",0.1,1,45));
+      else if (this.id =="bs_val2") set_bs_val2(getRoundedVal("#bs_val2",0.1,1,45));
+      else if (this.id =="tws_val3") set_tws_val3(getRoundedVal("#tws_val3",0.1,1,45));
+      else if (this.id =="bswsl_val") set_bswsl_val(getRoundedVal("#bswsl_val",0.1,1,45));
+      else if (this.id =="bssl_val") set_bssl_val(getRoundedVal("#bssl_val",0.1,1,45));
+      else if (this.id =="sEnergy_val") set_sEnergy_val(getRoundedVal("#sEnergy_val",0.1,0,100));
+      else if (this.id =="sEnergy_val3") set_sEnergy_val3(getRoundedVal("#sEnergy_val3",0.1,0,100));
+    } ;
+    if (e.keyCode === 37 || e.keyCode === 226 || e.keyCode === 40 || e.keyCode === 225) {
+      e.preventDefault();
+      if(this.id =="tws_val") set_tws_val(getRoundedVal("#tws_val",-0.1,1,45));
+      else if (this.id =="bs_val") set_bs_val(getRoundedVal("#bs_val",-0.1,1,45));
+      else if (this.id =="tws_val2") set_tws_val2(getRoundedVal("#tws_val2",-0.1,1,45));
+      else if (this.id =="bs_val2") set_bs_val2(getRoundedVal("#bs_val2",-0.1,1,45));
+      else if (this.id =="tws_val3") set_tws_val3(getRoundedVal("#tws_val3",-0.1,1,45));
+      else if (this.id =="bswsl_val") set_bswsl_val(getRoundedVal("#bswsl_val",-0.1,1,45));
+      else if (this.id =="bssl_val") set_bssl_val(getRoundedVal("#bssl_val",-0.1,1,45));
+      else if (this.id =="sEnergy_val") set_sEnergy_val(getRoundedVal("#sEnergy_val",-0.1,0,100));
+      else if (this.id =="sEnergy_val3") set_sEnergy_val3(getRoundedVal("#sEnergy_val3",-0.1,0,100));
+    }
+    return;
+  }
+  // block any non-number
+  if ((/*e.shiftKey || */(e.keyCode < 48 || e.keyCode > 57)) && (e.keyCode < 96 || e.keyCode > 105)) {
+      e.preventDefault();
+  }
+});
+
+function getRoundedVal(val,inc,min,max)
+{
+  var val2 = Number($(val).val().replace(",","."));
+  if(!val2) val2 = 1;
+  if(inc)
+  {
+      if(inc<0) 
+      {
+        if(val2>inc) val2 += inc;
+      } else
+      {
+        val2 += inc;
+      }
+      if(val2>max) val2 = max;
+      if(val2<min) val2 = min;
+  }
+  return Math.round(val2 * 10) / 10;
+}
+function updateChart() {
+  computeBoatData(activeBoat.polarName);
+  computeBoatEnergyLoose();
+  computeEnergyLoose();
+
+  getPenaTime(currentTWS);
+  getPenaDistance(currentTWS,currentBoatSpeed);
+  requestDrawSimplePenalitiesChart();
+  getDoublePenaTime(currentDTWS);
+  getDoublePenaDistance(currentDTWS,currentDBoatSpeed);
+  drawDoublePenalities();
+  requestDrawRentabilityChart();
+
+//	requestDrawAutoSailChart4();
+}
+
+function set_tws_val(val) 
+{
+  $("#tws_val_slider").val(val);
+  $(".tws_val").val(val);
+  currentTWS = val;
+  getPenaTime(currentTWS);
+  getPenaDistance(currentTWS,currentBoatSpeed);
+}
+
+$("#tws_val_slider").on('change', function() {  $(".tws_val").val(getRoundedVal("#tws_val_slider"));});
+$("#tws_val_slider").on('input', function() {  set_tws_val(getRoundedVal("#tws_val_slider"));});
+$('.tws_val').on('input', function(e) {  set_tws_val(getRoundedVal(e.target));});
+
+
+function set_bs_val(val) {
+  $("#bs_val_slider").val(val);
+  $(".bs_val").val(val);
+  currentBoatSpeed = val;
+  getPenaDistance(currentTWS,currentBoatSpeed);
+}
+
+$("#bs_val_slider").on('change', function() {  $("#bs_val").val(getRoundedVal("#bs_val_slider"));});
+$("#bs_val_slider").on('input', function() {  set_bs_val(getRoundedVal("#bs_val_slider"));});
+$(".bs_val").on('input', function(e) {  set_bs_val(getRoundedVal(e.target));});
+
+
+
+function set_sEnergy_val(val) 
+{
+  $(".sEnergy_val").val(val);
+  $("#sEnergy_val_slider").val(val);
+  currentEnergy = val;
+  requestDrawSimplePenalitiesChart();
+
+}
+$("#sEnergy_val_slider").on('change', function() { $("#sEnergy_val_slider").val(getRoundedVal("#sEnergy_val_slider"));});
+$("#sEnergy_val_slider").on('input', function() {  set_sEnergy_val(getRoundedVal("#sEnergy_val_slider"));});
+$('.sEnergy_val').on('input', function(e) {set_sEnergy_val(getRoundedVal(e.target));});
+
+
+
+function set_tws_val2(val) 
+{
+  $(".tws_val2").val(val);
+  $("#tws_val2_slider").val(val);
+  currentDTWS = val;
+  getDoublePenaTime(currentDTWS);
+  getDoublePenaDistance(currentDTWS,currentDBoatSpeed);
+}
+
+$("#tws_val2_slider").on('change', function() {  $("#tws_val2").val(getRoundedVal("#tws_val2_slider"));});
+$("#tws_val2_slider").on('input', function() {  set_tws_val2(getRoundedVal("#tws_val2_slider"));});
+$('.tws_val2').on('input', function(e) {  set_tws_val2(getRoundedVal(e.target));});
+
+function set_bs_val2(val) 
+{
+  $(".bs_val2").val(val);
+  $("#bs_val2_slider").val(val);
+  currentDBoatSpeed = val;
+  getDoublePenaDistance(currentDTWS,currentDBoatSpeed);
+}
+
+$(".sEnergy_val2").val(currentEnergy2);
+$("#sEnergy_val2_slider").val(currentEnergy2);
+
+function set_sEnergy_val2(val) 
+{
+  $(".sEnergy_val2").val(val);
+  $("#sEnergy_val2_slider").val(val);
+  currentEnergy2 = val;
+  drawDoublePenalities();
+  getDoublePenaTime(currentDTWS);
+  getDoublePenaDistance(currentDTWS,currentDBoatSpeed);
+
+}
+$("#sEnergy_val2_slider").on('change', function() { $("#sEnergy_val2_slider").val(getRoundedVal("#sEnergy_val2_slider"));});
+$("#sEnergy_val2_slider").on('input', function() {  set_sEnergy_val2(getRoundedVal("#sEnergy_val2_slider"));});
+$('.sEnergy_val2').on('input', function(e) {set_sEnergy_val2(getRoundedVal(e.target));});
+
+
+$("#bs_val2_slider").on('change', function() {  $("#bs_val2").val(getRoundedVal("#bs_val2_slider"));});
+$("#bs_val2_slider").on('input', function() {  set_bs_val2(getRoundedVal("#bs_val2_slider"));}); 
+$('.bs_val2').on('input', function(e) {  set_bs_val2(getRoundedVal(e.target));});
+function set_tws_val3(val) 
+{
+  $(".tws_val3").val(val);
+  $("#tws_val3_slider").val(val);
+  currentRTWS = val;
+  requestDrawRentabilityChart();
+}
+
+
+$("#tws_val3_slider").on('change', function() {  $("#tws_val3").val(getRoundedVal("#tws_val3_slider"));});
+$("#tws_val3_slider").on('input', function() {  set_tws_val3(getRoundedVal("#tws_val3_slider"));});
+$('.tws_val3').on('input', function(e) {  set_tws_val3(getRoundedVal(e.target));});
+
+function set_bswsl_val(val) 
+{
+  $(".bswsl_val").val(val);
+  $("#bswsl_val_slider").val(val);
+  currentBoatSpeedWithoutSC = val;
+  requestDrawRentabilityChart();
+}
+
+$("#bswsl_val_slider").on('change', function() {  $("#bswsl_val").val(getRoundedVal("#bswsl_val_slider"));});
+$("#bswsl_val_slider").on('input', function() {  set_bswsl_val(getRoundedVal("#bswsl_val_slider"));});
+$('.bswsl_val').on('input', function(e) {  set_bswsl_val(getRoundedVal(e.target));});
+
+function set_bssl_val(val) 
+{
+  $(".bssl_val").val(val);
+  $("#bssl_val_slider").val(val);
+  currentBoatSpeedWithSC = val;
+  requestDrawRentabilityChart();
+}
+
+$("#bssl_val_slider").on('change', function() { $("#bssl_val").val(getRoundedVal("#bssl_val_slider"));});
+$("#bssl_val_slider").on('input', function() {  set_bssl_val(getRoundedVal("#bssl_val_slider"));});
+$('.bssl_val').on('input', function(e) {set_bssl_val(getRoundedVal(e.target));});
+
+
+$(".sEnergy_val3").val(currentEnergy3);
+$("#sEnergy_val3_slider").val(currentEnergy3);
+
+function set_sEnergy_val3(val) 
+{
+  $(".sEnergy_val3").val(val);
+  $("#sEnergy_val3_slider").val(val);
+  currentEnergy3 = val;
+  requestDrawRentabilityChart();
+
+}
+$("#sEnergy_val3_slider").on('change', function() { $("#sEnergy_val3_slider").val(getRoundedVal("#sEnergy_val3_slider"));});
+$("#sEnergy_val3_slider").on('input', function() {  set_sEnergy_val3(getRoundedVal("#sEnergy_val3_slider"));});
+$('.sEnergy_val3').on('input', function(e) {set_sEnergy_val3(getRoundedVal(e.target));});
+
+  
+$('#winch').change(function() {
+	if($(this).is(":checked")) {
+	} else {
+		$('#FullPack').prop('checked', false);
+	}
+	updateChart();
+});
+$('#furler').change(function() {
+	if($(this).is(":checked")) {
+	} else {
+		$('#FullPack').prop('checked', false);
+	}
+	updateChart();
+});
+$('#jacket').change(function() {
+	if($(this).is(":checked")) {
+	} else {
+		$('#FullPack').prop('checked', false);
+	}
+	updateChart();
+});
+$('#FullPack').change(function() {
+	if($(this).is(":checked")) {
+		$('#winch').prop('checked', true);
+		$('#furler').prop('checked', true);
+		$('#jacket').prop('checked', true);
+	}
+	updateChart();
+});
+
+
+let workerRenta = null;
+
+function requestDrawRentabilityChart() {
+
+  if(voilePena.length == 0 ) return;
+
+  var tws= Math.round(currentRTWS * 10);
+  if(tws>349)tws=349;
+  
+
+  
+  var energyFactor = currentEnergy3 * -0.015 + 2;
+  if(energyFactor<0.5) energyFactor = 0.5;
+  let winchFactor = 0.5;
+  if($('#winch').is(":checked")) winchFactor = 0.7;
+
+  var voilePenaApply = (voilePena[tws]*energyFactor).toFixed(0);
+  $("#rentabilityPenality_tps").text(buildTimeTxt(voilePenaApply));
+  $("#rentabilityPenality_tps2").text(buildTimeTxt2(voilePenaApply));
+
+  voilePenaApply = Math.round(voilePenaApply * 10) / 10;
+
+	if(workerRenta) workerRenta.terminate();
+
+	//workerRenta = new Worker(URL.createObjectURL(new Blob(["("+chartRENTAWorker.toString()+")()"], {type: 'text/javascript'})));
+	workerRenta = new Worker('./assets/js/pChartRENTA_2.js');
+
+	workerRenta.postMessage({'voilePenaApply': voilePenaApply,
+                          'currentBoatSpeedWithoutSC': currentBoatSpeedWithoutSC,
+                          'currentBoatSpeedWithSC': currentBoatSpeedWithSC,
+                          'winchFactor': winchFactor
+                        });
+	workerRenta.addEventListener('message', function(e) {
+		doDrawRentabiltyChart( e.data);
+	  }, false);
+
+
+
+
+
+}
+
+
+function doDrawRentabiltyChart(datas)
+{
+  let timeValue =  datas.timeValue;
+  let timeAxisRef = datas.timeAxisRef;
+  let drawDistanceWithOutSC = datas.drawDistanceWithOutSC;
+  let drawDistanceWithSCStd = datas.drawDistanceWithSCStd;
+  let needTimeStd = datas.needTimeStd;
+  let distanceWithSCStd = datas.distanceWithSCStd;
+  
+  const dataChart3 = {
+    labels: timeValue,
+    datasets: [
+      {
+        label: wordList[6],
+        data: drawDistanceWithOutSC,
+        yAxisID: 'y',
+        borderColor: 'green',
+        backgroundColor: 'green',
+      },
+      {
+        label: wordList[7],
+        data: drawDistanceWithSCStd,
+        borderColor: 'blue',
+        backgroundColor: 'blue',
+        yAxisID: 'y',
+      }
+    ]
+  };
+  var titleChart3 = wordList[5] + activeBoat.name+ " - "+ wordList[13] +" " + currentEnergy3 +"%";
+  $("#chartTitle3").text(titleChart3);
+  const zoomOptions = {
+    limits: {
+ //     x: {min: 50, max:350, minRange: 20}
+    },
+    pan: {
+      enabled: true,
+      mode: 'x',
+    },
+    zoom: {
+      wheel: {
+        enabled: true,
+      },
+      pinch: {
+        enabled: true
+      },
+      mode: 'x',
+      speed: 0.05
+    }
+  };
+ const configChart3 = {
+     type: 'CustomLineChart',
+     data: dataChart3,
+     options: {
+      plugins: {
+        zoom : zoomOptions,
+        legend: {
+          display: true
+        },
+        tooltip: {
+          callbacks: {
+            title: function(tooltipItems, data) {
+              let title = tooltipItems[0].label || '0';
+              return buildTimeTxt2(title);
+            },
+            label: function(context) {
+              let label = context.dataset.label || '';
+
+              if (label) {
+                label += ': ';
+              }
+              if (context.parsed.y !== null) {
+                  label += buildDistanceTxt(context.parsed.y);
+
+									if(wordList[7] == context.dataset.label) {
+                    label +=  " (" + buildDistanceTxt(drawDistanceWithSCStd[context.dataIndex] - drawDistanceWithOutSC[context.dataIndex])+")";
+                  } else if(wordList[8] == context.dataset.label) {
+                    label +=  " (" + buildDistanceTxt( drawDistanceWithSCPro[context.dataIndex] - drawDistanceWithOutSC[context.dataIndex])+")";
+                  }   
+              }
+              return label;
+            },
+          }
+        }		   
+      },
+       responsive: true,
+       interaction: {
+         mode: 'index',
+         intersect: false,
+       },
+       stacked: false,
+       elements: {
+         point:{
+             radius: 0
+         }
+     },
+
+       scales: {
+         x: {
+           ticks: {
+               stepSize: 1,
+             callback: function(value, index, values) {
+              if(timeAxisRef.find(element => element==value))
+                 return buildTimeTxt2(value);
+                 //timeValue[value] + " sec";
+               else if(value===0){
+                 return value;
+                 }
+             }
+           },
+         },
+         y: {
+           type: 'linear',
+           display: true,
+           position: 'left',
+           ticks: {
+             stepSize: 1,
+             callback: function(value, index, values) {
+               if(labelsChartDistance.find(element => element==value))
+                return buildDistanceTxt(value);
+             }
+           },
+           title : {
+             display:true,
+             text:"Distance"
+           }
+         },
+       }
+     },
+   };
+
+  if(displayedRentabilityChart) displayedRentabilityChart.destroy();
+  var ctx = document.getElementById('rentabilityChart');
+  displayedRentabilityChart = new Chart(ctx, configChart3);
+  workerRenta = null;
+
+  $(".tws_val3").val(currentRTWS);
+  $(".bswsl_val").val(currentBoatSpeedWithoutSC);
+  $(".bssl_val").val(currentBoatSpeedWithSC);
+
+  $("#tws_val3_slider").val(currentRTWS);
+  $("#bswsl_val_slider").val(currentBoatSpeedWithoutSC);
+  $("#bssl_val_slider").val(currentBoatSpeedWithSC);
+  $(".sEnergy_val3").val(currentEnergy3);
+  $("#sEnergy_val3_slider").val(currentEnergy3);
+
+
+  if(needTimeStd!=0) {
+    $("#tableRentability_Std_Tps").text(buildTimeTxt(needTimeStd));
+    $("#tableRentability_Std_Tps2").text(buildTimeTxt2(needTimeStd));
+    $("#tableRentability_Std_Dist").text(buildDistanceTxt(distanceWithSCStd[needTimeStd]));
+  } else
+  {
+    $("#tableRentability_Std_Tps").text("> 12h");
+    $("#tableRentability_Std_Tps2").text("> 12h");
+    $("#tableRentability_Std_Dist").text("> 12h");
+  }
+
+}
+
+function buildTimeTxt(tps)
+{
+  var title = Math.round(tps * 10) / 10;
+//  title += " sec / ";
+  title += " sec";
+  return title;
+
+}
+function buildTimeTxt2(tps)
+{
+  var min = Math.round(tps/60);
+  var sec = Math.round((tps - min*60)* 10) / 10;
+  if(sec<0)
+  {
+    min -= 1;
+    sec += 60;
+
+  }
+  var title = min;
+  title += " min ";
+  if(sec != 0) {
+    title += sec;
+    title += " s";
+  }
+  return title;
+}
+function buildDistanceTxt(distance)
+{
+  var title = Math.round(distance * 100) / 100;
+  title += " nm";
+  return title;
+
+}
+
+function buildEnergyTxt(energy) {
+  var title = "-"+Math.round(energy * 100) / 100;
+  title += " %";
+  return title;
+
+
+}
+
+
+function getPenaTime(tws)
+{
+  if(virementPena.length == 0 ) return;
+
+  if(!tws) tws = 100;
+  tws= Math.round(tws * 10);
+
+  if(tws>349)tws=349;
+
+  
+  var energyFactor = currentEnergy * -0.015 + 2;
+  if(energyFactor<0.5) energyFactor = 0.5;
+
+  $("#virement_tps").text(buildTimeTxt((virementPena[tws]*energyFactor).toFixed(0)));
+  $("#virement_tps2").text(buildTimeTxt2((virementPena[tws]*energyFactor).toFixed(0)));
+  $("#virement_Energy").text(buildEnergyTxt(virementEnergyLoose[tws]));
+
+  $("#empannage_tps").text(buildTimeTxt((empannagePena[tws]*energyFactor).toFixed(0)));
+  $("#empannage_tps2").text(buildTimeTxt2((empannagePena[tws]*energyFactor).toFixed(0)));
+  $("#empannage_Energy").text(buildEnergyTxt(empannageEnergyLoose[tws]));
+
+  $("#voile_tps").text(buildTimeTxt((voilePena[tws]*energyFactor).toFixed(0)));
+  $("#voile_tps2").text(buildTimeTxt2((voilePena[tws]*energyFactor).toFixed(0)));
+  $("#voile_Energy").text(buildEnergyTxt(voileEnergyLoose[tws]));
+  
+}
+function getPenaDistance(tws,bs)
+{
+  if(virementPena.length == 0 ) return;
+  if(!tws) tws = 100;
+  tws= Math.round(tws * 10);
+
+  if(tws>349)tws=349;
+
+
+  var energyFactor = currentEnergy * -0.015 + 2;
+  if(energyFactor<0.5)energyFactor=0.5;
+
+  let winchFactor = 0.5;
+  if($('#winch').is(":checked")) winchFactor = 0.7;
+
+
+  var dWithoutPenality = (bs / 3600)*virementPena[tws]*energyFactor ;
+  var dWithPenalityStd = (bs*winchFactor / 3600)*virementPena[tws]*energyFactor;
+  $("#virement_std").text(buildDistanceTxt(dWithPenalityStd - dWithoutPenality));
+
+  dWithoutPenality = (bs / 3600)*empannagePena[tws]*energyFactor ;
+  dWithPenalityStd = (bs*winchFactor / 3600)*empannagePena[tws]*energyFactor;
+  $("#empannage_std").text(buildDistanceTxt(dWithPenalityStd - dWithoutPenality));
+
+  dWithoutPenality = (bs / 3600)*voilePena[tws] *energyFactor;
+  dWithPenalityStd = (bs*winchFactor / 3600)*voilePena[tws]*energyFactor;
+  $("#voile_std").text(buildDistanceTxt(dWithPenalityStd - dWithoutPenality));
+
+
+ 
+}
+
+function getDoublePenaTime(tws)
+{
+  if(virementVoilePena.t.length == 0 ) return;
+  if(!tws) tws = 100;
+  tws= Math.round(tws * 10);
+
+  if(tws>349)tws=349;
+
+  var energyFactor = currentEnergy2 * -0.015 + 2;
+  if(energyFactor<0.5)energyFactor=0.5;
+
+  $("#virementDouble_tps").text(buildTimeTxt((virementVoilePena.t[tws]*energyFactor).toFixed(0)));
+  $("#virementDouble_tps2").text(buildTimeTxt2((virementVoilePena.t[tws]*energyFactor).toFixed(0)));
+  $("#virementDouble_energy").text(buildEnergyTxt((virementEnergyLoose[tws] + voileEnergyLoose[tws]).toFixed(0)));
+
+  $("#empannageDouble_tps").text(buildTimeTxt((empannageVoilePena.t[tws]*energyFactor).toFixed(0)));
+  $("#empannageDouble_tps2").text(buildTimeTxt2((empannageVoilePena.t[tws]*energyFactor).toFixed(0)));
+  $("#empannageDouble_energy").text(buildEnergyTxt((virementEnergyLoose[tws] + voileEnergyLoose[tws]).toFixed(0)));
+
+}
+
+function getDoublePenaDistance(tws,bs)
+{
+  if(virementPena.length == 0 ) return;
+  if(!tws) tws = 100;
+  tws= Math.round(tws * 10);
+
+  if(tws>349)tws=349;
+
+  var energyFactor = currentEnergy2 * -0.015 + 2;
+  if(energyFactor<0.5)energyFactor=0.5;
+
+  let winchFactor = 0.5;
+  if($('#winch').is(":checked")) winchFactor = 0.7;
+
+  var dWithoutPenality = (bs / 3600)*virementVoilePena.t[tws] *energyFactor;
+  var dWithPenalityStd = (bs*winchFactor*winchFactor / 3600)*virementVoilePena.d[tws]*energyFactor 
+                        +(bs*winchFactor / 3600)*virementVoilePena.s[tws]*energyFactor;
+  
+  $("#virementDouble_std").text(buildDistanceTxt(dWithPenalityStd - dWithoutPenality));
+  
+  dWithoutPenality = (bs / 3600)*empannageVoilePena.t[tws]*energyFactor ;
+  dWithPenalityStd = (bs*winchFactor*winchFactor / 3600)*empannageVoilePena.d[tws]*energyFactor 
+                        +(bs*winchFactor / 3600)*empannageVoilePena.s[tws]*energyFactor;
+  
+  $("#empannageDouble_std").text(buildDistanceTxt(dWithPenalityStd - dWithoutPenality));
+  
+}
+

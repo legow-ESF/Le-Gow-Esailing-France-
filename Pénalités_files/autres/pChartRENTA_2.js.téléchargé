@@ -1,0 +1,99 @@
+
+function chartRENTAWorker(){
+    self.addEventListener('message', function(e) {
+
+ /*       importScripts(' file:///C:/virtual%20regatta/web/ityc_marina/assets/js/fakeDoc.js')
+        importScripts(' file:///C:/virtual%20regatta/web/ityc_marina/assets/vendor/jquery/jquery-3.6.0.min.js')
+        importScripts(' file:///C:/virtual%20regatta/web/ityc_marina/assets//vendor/toxxct/polars_reader_101.js')
+*/
+
+        importScripts('fakeDoc.js')
+        importScripts(' ../vendor/jquery/jquery-3.6.0.min.js')
+        importScripts('../vendor/toxxct/polars_reader_101.js')
+
+
+        var maxComputedTime = 12*60*60;
+        var distanceWithOutSC = [];
+        var distanceWithSCStd = [];
+
+
+        var needTimeStd = 0;
+        distanceWithOutSC.push(0);
+        distanceWithSCStd.push(0);
+        for(var t=1;t<maxComputedTime;t++)
+        {
+            distanceWithOutSC.push(distanceWithOutSC[t-1] + e.data.currentBoatSpeedWithoutSC/3600);  
+            if(t<e.data.voilePenaApply) {
+                distanceWithSCStd.push(distanceWithSCStd[t-1] + e.data.currentBoatSpeedWithSC*e.data.winchFactor/3600);  
+            } else {
+                distanceWithSCStd.push(distanceWithSCStd[t-1] + e.data.currentBoatSpeedWithSC/3600);  
+                
+            }
+            if(needTimeStd == 0 && distanceWithSCStd[t] > distanceWithOutSC[t]) {
+                needTimeStd = t;
+            }
+        }
+
+        var maxTime = Math.min(needTimeStd+10,maxComputedTime);
+        var moduloTime = 30;
+
+        //0 - 5min ->30s
+        //5min - 10min -> 1min
+        //10min - 20min -> 2min
+        //20min -40min -> 5min
+        //40min - 1h -> 10min
+        //1h - 3h -> 15min
+        //>3h -> 20min
+        if(maxTime < 5*60)  
+            moduloTime = 30;
+        else if(maxTime < 10*60)
+            moduloTime = 60;
+        else if(maxTime < 20*60)
+            moduloTime = 2*60;
+        else if(maxTime < 40*60)
+            moduloTime = 5*60;
+        else if(maxTime < 1*60*60)
+            moduloTime = 10*60;
+        else if(maxTime < 3*60*60)
+            moduloTime = 15*60;
+        else if(maxTime < 5*60*60)
+            moduloTime = 20*60;
+        else
+            moduloTime = 60*60;
+
+        timeValue = [];
+        var drawDistanceWithOutSC = [];
+        var drawDistanceWithSCStd = [];
+        var timeAxisRef = [];
+        for (var i = 0; i < maxTime; i++) {
+            timeValue.push(i);
+            if((i%moduloTime)==0) timeAxisRef.push(i);
+            drawDistanceWithOutSC.push(distanceWithOutSC[i]);
+            drawDistanceWithSCStd.push(distanceWithSCStd[i]);
+        }
+
+
+        var datas = [];
+        datas.timeValue = timeValue;
+        datas.timeAxisRef = timeAxisRef;
+        datas.drawDistanceWithOutSC = drawDistanceWithOutSC;
+        datas.drawDistanceWithSCStd = drawDistanceWithSCStd;
+        datas.distanceWithSCStd = distanceWithSCStd;
+        datas.needTimeStd = needTimeStd;
+    
+        self.postMessage(datas);
+        self.close(); // Terminates the worker. 
+    
+    
+    }, false);
+}
+
+
+// This is in case of normal worker start
+// "window" is not defined in web worker
+// so if you load this file directly using `new Worker`
+// the worker code will still execute properly
+if( 'undefined' === typeof window){
+    chartRENTAWorker();
+
+ }

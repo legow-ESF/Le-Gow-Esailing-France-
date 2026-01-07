@@ -1,0 +1,125 @@
+************************************* Invoked: mar. déc. 23 08:20:38 2025
+[0] Arguments: C:\Hugo\vr-routeur\XyGrib_Win_Online_Installer_v1.2.6.exe
+[7] Operations sanity check succeeded.
+[3856] addDownloadable "data.7z"
+[3858] addDownloadable "bearer.7z"
+[3858] addDownloadable "iconengines.7z"
+[3858] addDownloadable "icons.7z"
+[3858] addDownloadable "imageformats.7z"
+[3858] addDownloadable "platforms.7z"
+[3858] addDownloadable "printsupport.7z"
+[3858] addDownloadable "styles.7z"
+[3858] addDownloadable "content.7z"
+[3858] addDownloadable "data.7z"
+[4132] Created critical message box "TargetDirectoryInUse": "Erreur", "The directory you selected already exists and contains an installation. Choose a different target for installation."
+[32155] Tmp and install directories are on the same volume. Volume mount point: "C:\\" Free space available: "403.01 GiB"
+[32155] Installation space required: "239.81 MiB" Temporary space required: "92.29 MiB" Local repository size: "0.00 octets"
+[33564] backup  operation: Mkdir
+[33564] 	- arguments: C:/Hugo/vr-routeur/data/Grib routeur
+[33565] Done
+[33565] perform  operation: Mkdir
+[33565] 	- arguments: C:/Hugo/vr-routeur/data/Grib routeur
+[33566] Done
+[33566] Install size: 3 components
+[33567] Starting elevated process "C:\\Hugo\\vr-routeur\\XyGrib_Win_Online_Installer_v1.2.6.exe" with arguments " --startserver PRODUCTION,{7262455a-9efc-4784-804f-7321e44354a3},{1c308118-a830-4eb9-b1ea-415133ffbdf0}"
+[36846] Finished starting elevated process.
+[53786] backup org.opengribs.xygrib.core.win operation: Extract
+[53786] 	- arguments: installer://org.opengribs.xygrib.core.win/1.2.6bearer.7z, C:\Hugo\vr-routeur\data\Grib routeur
+[53786] Done
+[53786] perform org.opengribs.xygrib.core.win operation: Extract
+[53786] 	- arguments: installer://org.opengribs.xygrib.core.win/1.2.6bearer.7z, C:\Hugo\vr-routeur\data\Grib routeur
+[53792] Done
+[53792] backup org.opengribs.xygrib.core.win operation: Extract
+[53792] 	- arguments: installer://org.opengribs.xygrib.core.win/1.2.6content.7z, C:\Hugo\vr-routeur\data\Grib routeur
+[53792] Done
+[53792] perform org.opengribs.xygrib.core.win operation: Extract
+[53792] 	- arguments: installer://org.opengribs.xygrib.core.win/1.2.6content.7z, C:\Hugo\vr-routeur\data\Grib routeur
+[54460] Done
+[54461] backup org.opengribs.xygrib.core.win operation: Extract
+[54461] 	- arguments: installer://org.opengribs.xygrib.core.win/1.2.6iconengines.7z, C:\Hugo\vr-routeur\data\Grib routeur
+[54461] Done
+[54461] perform org.opengribs.xygrib.core.win operation: Extract
+[54461] 	- arguments: installer://org.opengribs.xygrib.core.win/1.2.6iconengines.7z, C:\Hugo\vr-routeur\data\Grib routeur
+[54465] Done
+[54465] backup org.opengribs.xygrib.core.win operation: Extract
+[54465] 	- arguments: installer://org.opengribs.xygrib.core.win/1.2.6icons.7z, C:\Hugo\vr-routeur\data\Grib routeur
+[54465] Done
+[54465] perform org.opengribs.xygrib.core.win operation: Extract
+[54465] 	- arguments: installer://org.opengribs.xygrib.core.win/1.2.6icons.7z, C:\Hugo\vr-routeur\data\Grib routeur
+[54468] Done
+[54468] backup org.opengribs.xygrib.core.win operation: Extract
+[54468] 	- arguments: installer://org.opengribs.xygrib.core.win/1.2.6imageformats.7z, C:\Hugo\vr-routeur\data\Grib routeur
+[54468] Done
+[54468] perform org.opengribs.xygrib.core.win operation: Extract
+[54468] 	- arguments: installer://org.opengribs.xygrib.core.win/1.2.6imageformats.7z, C:\Hugo\vr-routeur\data\Grib routeur
+[54515] Done
+[54516] backup org.opengribs.xygrib.core.win operation: Extract
+[54516] 	- arguments: installer://org.opengribs.xygrib.core.win/1.2.6platforms.7z, C:\Hugo\vr-routeur\data\Grib routeur
+[54516] Done
+[54516] perform org.opengribs.xygrib.core.win operation: Extract
+[54516] 	- arguments: installer://org.opengribs.xygrib.core.win/1.2.6platforms.7z, C:\Hugo\vr-routeur\data\Grib routeur
+[54558] Done
+[54558] backup org.opengribs.xygrib.core.win operation: Extract
+[54558] 	- arguments: installer://org.opengribs.xygrib.core.win/1.2.6printsupport.7z, C:\Hugo\vr-routeur\data\Grib routeur
+[54558] Done
+[54558] perform org.opengribs.xygrib.core.win operation: Extract
+[54559] 	- arguments: installer://org.opengribs.xygrib.core.win/1.2.6printsupport.7z, C:\Hugo\vr-routeur\data\Grib routeur
+[54563] Done
+[54563] backup org.opengribs.xygrib.core.win operation: Extract
+[54563] 	- arguments: installer://org.opengribs.xygrib.core.win/1.2.6styles.7z, C:\Hugo\vr-routeur\data\Grib routeur
+[54563] Done
+[54563] perform org.opengribs.xygrib.core.win operation: Extract
+[54563] 	- arguments: installer://org.opengribs.xygrib.core.win/1.2.6styles.7z, C:\Hugo\vr-routeur\data\Grib routeur
+[54571] Done
+[54571] backup org.opengribs.xygrib.core.win operation: CreateShortcut
+[54571] 	- arguments: C:\Hugo\vr-routeur\data\Grib routeur/XyGrib.exe, C:\Users\perri\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\XyGrib/XyGrib.lnk, workingDirectory=C:\Hugo\vr-routeur\data\Grib routeur, iconPath=C:\Hugo\vr-routeur\data\Grib routeur/XyGrib.exe, IconID=1, description=Run XyGrib Weather Visualization
+[54571] Done
+[54571] perform org.opengribs.xygrib.core.win operation: CreateShortcut
+[54571] 	- arguments: C:\Hugo\vr-routeur\data\Grib routeur/XyGrib.exe, C:\Users\perri\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\XyGrib/XyGrib.lnk, IconID=1
+[54633] Done
+[54633] backup org.opengribs.xygrib.core.win operation: CreateShortcut
+[54633] 	- arguments: C:\Hugo\vr-routeur\data\Grib routeur/XyGribMaintenanceTool.exe, C:\Users\perri\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\XyGrib/XyGribMaintenanceTool.lnk, workingDirectory=C:\Hugo\vr-routeur\data\Grib routeur, iconPath=C:\Hugo\vr-routeur\data\Grib routeur/XyGrib.exe, IconID=1, description=Run XyGrib Weather Visualization
+[54633] Done
+[54634] perform org.opengribs.xygrib.core.win operation: CreateShortcut
+[54634] 	- arguments: C:\Hugo\vr-routeur\data\Grib routeur/XyGribMaintenanceTool.exe, C:\Users\perri\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\XyGrib/XyGribMaintenanceTool.lnk, IconID=1
+[54643] Done
+[54643] backup org.opengribs.xygrib.core.win operation: RegisterFileType
+[54643] 	- arguments: grb2, C:\Hugo\vr-routeur\data\Grib routeur\XyGrib.exe "%1", XyGrib Files, application/x-binary, C:\Hugo\vr-routeur\data\Grib routeur\XyGrib.exe, ProgId=XyGrib.grb2
+[54643] Done
+[54643] perform org.opengribs.xygrib.core.win operation: RegisterFileType
+[54643] 	- arguments: grb2, C:\Hugo\vr-routeur\data\Grib routeur\XyGrib.exe "%1", XyGrib Files, application/x-binary, C:\Hugo\vr-routeur\data\Grib routeur\XyGrib.exe, ProgId=XyGrib.grb2
+[54648] Done
+[54649] backup org.opengribs.xygrib.core.win operation: RegisterFileType
+[54649] 	- arguments: grib2, C:\Hugo\vr-routeur\data\Grib routeur\XyGrib.exe "%1", XyGrib Files, application/x-binary, C:\Hugo\vr-routeur\data\Grib routeur\XyGrib.exe, ProgId=XyGrib.grib2
+[54649] Done
+[54649] perform org.opengribs.xygrib.core.win operation: RegisterFileType
+[54649] 	- arguments: grib2, C:\Hugo\vr-routeur\data\Grib routeur\XyGrib.exe "%1", XyGrib Files, application/x-binary, C:\Hugo\vr-routeur\data\Grib routeur\XyGrib.exe, ProgId=XyGrib.grib2
+[54652] Done
+[54652] backup org.opengribs.xygrib.core.win operation: RegisterFileType
+[54652] 	- arguments: grb, C:\Hugo\vr-routeur\data\Grib routeur\XyGrib.exe "%1", XyGrib Files, application/x-binary, C:\Hugo\vr-routeur\data\Grib routeur\XyGrib.exe, ProgId=XyGrib.grb
+[54652] Done
+[54652] perform org.opengribs.xygrib.core.win operation: RegisterFileType
+[54652] 	- arguments: grb, C:\Hugo\vr-routeur\data\Grib routeur\XyGrib.exe "%1", XyGrib Files, application/x-binary, C:\Hugo\vr-routeur\data\Grib routeur\XyGrib.exe, ProgId=XyGrib.grb
+[54655] Done
+[54656] backup org.opengribs.xygrib.core.win operation: License
+[54656] 	- arguments:
+[54656] Done
+[54656] perform org.opengribs.xygrib.core.win operation: License
+[54656] 	- arguments:
+[54658] Done
+[54660] backup org.opengribs.xygrib.data operation: Extract
+[54660] 	- arguments: installer://org.opengribs.xygrib.data/1.2.6data.7z, C:\Users\perri\AppData\Roaming/openGribs/XyGrib
+[54660] Done
+[54661] perform org.opengribs.xygrib.data operation: Extract
+[54661] 	- arguments: installer://org.opengribs.xygrib.data/1.2.6data.7z, C:\Users\perri\AppData\Roaming/openGribs/XyGrib
+[55588] Done
+[55590] backup org.opengribs.xygrib.maps operation: Extract
+[55590] 	- arguments: installer://org.opengribs.xygrib.maps/1.0.0data.7z, C:\Users\perri\AppData\Roaming/openGribs/XyGrib
+[55590] Done
+[55590] perform org.opengribs.xygrib.maps operation: Extract
+[55590] 	- arguments: installer://org.opengribs.xygrib.maps/1.0.0data.7z, C:\Users\perri\AppData\Roaming/openGribs/XyGrib
+[60106] Done
+[60113] Writing maintenance tool: "C:\\Hugo\\vr-routeur\\data\\Grib routeur/XyGribMaintenanceTool.exe.new"
+[60171] Wrote permissions for maintenance tool.
+[60302] Maintenance tool restart: false.
+[96420] starting "C:\\Program Files (x86)/XyGrib/XyGrib.exe" ()

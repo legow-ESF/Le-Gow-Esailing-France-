@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <title>Routeur — VR Pro</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <style>
+    body { font-family: Arial; background:#000; color:white; margin:0; }
+    #menuBtn { position:fixed; top:10px; left:10px; z-index:1000; background:#0af; border:none; padding:10px 14px; border-radius:8px; color:white; font-size:18px; cursor:pointer; }
+    #menu { position:fixed; top:0; left:-260px; width:250px; height:100%; background:#121b2e; transition:.3s; padding:10px; z-index:900; }
+    #menu.open { left:0; }
+    label { display:block; margin-top:6px; }
+    input, select { width:100%; border-radius:6px; border:none; padding:4px; }
+    button.big { margin-top:10px; padding:8px; width:100%; border:none; border-radius:8px; background:#0af; color:white; }
+    #map { height:100vh; }
+    #coastStatus { display:none; }
+  </style>
+</head>
+<body>
+
+<button id="menuBtn" onclick="toggleMenu()">☰ Menu</button>
+
+<div id="menu">
+  <h3>⚙️ Paramètres</h3>
+  <label>Latitude départ</label> <input id="lat" value="48.3">
+  <label>Longitude départ</label> <input id="lon" value="-4.8">
+  <label>Latitude arrivée</label> <input id="lat2" value="45.0">
+  <label>Longitude arrivée</label> <input id="lon2" value="-18.0">
+  <label>Bateau</label>
+  <select id="boat">
+    <option>Caravel</option>
+    <option>Classe 40</option>
+    <option>Cruiser Racer</option>
+    <option>Figaro</option>
+    <option selected>Imoca</option>
+    <option>Mini 6.50</option>
+    <option>Mod 70</option>
+    <option>Ocean Fifty</option>
+    <option>Offshore Racer</option>
+    <option>Super Maxi 100</option>
+    <option>Tara</option>
+    <option>Trymaran Happy</option>
+    <option>Ultim BX PI</option>
+    <option>Ultim Crew</option>
+    <option>Ultim solo</option>
+    <option>Volvo 65</option>
+  </select>
+  <label>Option</label>
+  <select id="option">
+    <option>nu</option>
+    <option selected>foils</option>
+    <option>légères</option>
+    <option>lourdes</option>
+    <option>code 0</option>
+    <option>polish</option>
+  </select>
+  <button class="big" onclick="calcRoute()">Tracer la route</button>
+</div>
+
+<div id="map"></div>
+
+<script>
+  function toggleMenu() {
+    document.getElementById("menu").classList.toggle("open");
+  }
+
+  // 🌍 ——— CARTE VR OFFSHORE STYLE ———
+  const map = L.map("map").setView([48, -20], 3);
+  map.getContainer().style.backgroundColor = '#0b1d3a';
+
+  const landStyle = {
+    color: '#000000',
+    weight: 0.5,
+    opacity: 0.6,
+    fillOpacity: 0.95,
+    fillColor: '#000000'
+  };
+
+  let landLayer = null;
+
+  function loadLand() {
+    if (!landLayer) {
+      fetch('https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_10m_admin_0_countries.geojson')
+        .then(r => r.json())
+        .then(data => {
+          landLayer = L.geoJSON(data, { style: landStyle }).addTo(map);
+        })
+        .catch(() => {
+          landLayer = L.geoJSON({ features: [] }, { style: landStyle }).addTo(map);
+        });
+    }
+  }
+
+  // ✅ Démarrage
+  loadLand();
+
+  // 🚢 ——— ROUTING ———
+  let polyline = null;
+  async function calcRoute(){
+    const p = new URLSearchParams({
+      lat: document.getElementById("lat").value,
+      lon: document.getElementById("lon").value,
+      lat2: document.getElementById("lat2").value,
+      lon2: document.getElementById("lon2").value,
+      boat: document.getElementById("boat").value,
+      option: document.getElementById("option").value
+    });
+
+    const res = await fetch("/api/route?" + p);
+    const data = await res.json();
+    if (polyline) map.removeLayer(polyline);
+
+    const points = data.track.map(p => Array.isArray(p) ? [p[0], p[1]] : [p.lat, p.lon]);
+    polyline = L.polyline(points, { color: "#ff4444", weight: 3 }).addTo(map);
+    map.fitBounds(polyline.getBounds());
+  }
+</script>
+
+</body>
+</html>
